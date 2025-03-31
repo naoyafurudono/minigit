@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	minigit "github.com/naoyafurudono/mini-git"
+	"github.com/naoyafurudono/minigit"
 )
 
 func main() {
@@ -14,9 +14,14 @@ func main() {
 		slog.SetDefault(slog.New(h))
 	}
 	h := hex.EncodeToString
+	root, ok := os.LookupEnv("ROOT")
+	if !ok {
+		slog.Error("ROOT is not set")
+		os.Exit(1)
+	}
 
 	src := "hello\n"
-	b := minigit.NewBlob([]byte(src))
+	b := minigit.NewBlob([]byte(src), root)
 	name := b.Name()
 	slog.Info("result", "src", src, "name", h(name[:]), "data", h(b.Data()), "compress", h(b.Compress()))
 	if err := b.Store(); err != nil {

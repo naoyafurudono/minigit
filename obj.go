@@ -22,12 +22,13 @@ type Object interface {
 
 type blob struct {
 	content []byte
+	root    string
 }
 
 var _ Object = &blob{}
 
-func NewBlob(content []byte) *blob {
-	return &blob{content: content}
+func NewBlob(content []byte, root string) *blob {
+	return &blob{content: content, root: root}
 }
 
 func (b *blob) Name() [sha1.Size]byte {
@@ -55,11 +56,7 @@ func (b *blob) Compress() []byte {
 
 func (b *blob) Store() error {
 	n := b.Name()
-	root, ok := os.LookupEnv("ROOT")
-	if !ok {
-		return fmt.Errorf("ROOT is not set")
-	}
-	d := path.Join(root, ".git", "objects", fmt.Sprintf("%x", n[:1]))
+	d := path.Join(b.root, ".git", "objects", fmt.Sprintf("%x", n[:1]))
 	if err := os.MkdirAll(d, 0755); err != nil {
 		return err
 	}
