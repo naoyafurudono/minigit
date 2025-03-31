@@ -65,7 +65,7 @@ func TestBlob(t *testing.T) {
 	})
 }
 
-// gitを実行してその出力をテストのログにプロキシする.
+// gitを実行して空白などを除去した上で出力を文字列として返す.
 // gitが0以外のステータスコードで終了した場合はテストを失敗させる.
 func runGit(t *testing.T, args []string) string {
 	t.Helper()
