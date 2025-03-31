@@ -19,4 +19,8 @@ func main() {
 	b := minigit.NewBlob([]byte(src))
 	name := b.Name()
 	slog.Info("result", "src", src, "name", h(name[:]), "data", h(b.Data()), "compress", h(b.Compress()))
+	if err := b.Store(); err != nil {
+		slog.Error("failed to store", "err", err)
+		os.Exit(1)
+	}
 }

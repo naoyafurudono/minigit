@@ -5,6 +5,8 @@ import (
 	"compress/zlib"
 	"crypto/sha1"
 	"fmt"
+	"os"
+	"path"
 )
 
 type Object interface {
@@ -14,6 +16,8 @@ type Object interface {
 	Data() []byte
 	// zlibで圧縮したデータを取得する
 	Compress() []byte
+	// しかるべき形で永続化する
+	Store() error
 }
 
 type blob struct {
@@ -37,11 +41,31 @@ func (b *blob) Data() []byte {
 	return append(header, b.content...)
 }
 
-
 func (b *blob) Compress() []byte {
 	var r bytes.Buffer
-	w := zlib.NewWriter(&r)
+	w, err := zlib.NewWriterLevel(&r, 1)
+	if err != nil {
+		// 指定するレベルがまずいときにだけエラーになる。テストで担保するのでpanicで良い。
+		panic(err)
+	}
 	w.Write(b.Data())
 	w.Close()
 	return r.Bytes()
+}
+
+func (b *blob) Store() error {
+	n := b.Name()
+	root, ok := os.LookupEnv("ROOT")
+	if !ok {
+		return fmt.Errorf("ROOT is not set")
+	}
+	d := path.Join(root, ".git", "objects", fmt.Sprintf("%x", n[:1]))
+	if err := os.MkdirAll(d, 0755); err != nil {
+		return err
+	}
+	p := path.Join(d, fmt.Sprintf("%x", n[1:]))
+	if err := os.WriteFile(p, b.Compress(), 0660); err != nil {
+		return err
+	}
+	return nil
 }
