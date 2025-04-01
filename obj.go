@@ -58,11 +58,11 @@ func (b *blob) Store() error {
 	n := b.Name()
 	d := path.Join(b.root, ".git", "objects", fmt.Sprintf("%x", n[:1]))
 	if err := os.MkdirAll(d, 0755); err != nil {
-		return err
+		return fmt.Errorf("mkdir: %w", err)
 	}
 	p := path.Join(d, fmt.Sprintf("%x", n[1:]))
 	if err := os.WriteFile(p, b.Compress(), 0660); err != nil {
-		return err
+		return fmt.Errorf("write: %w", err)
 	}
 	return nil
 }

@@ -63,6 +63,24 @@ func TestBlob(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Store", func(t *testing.T) {
+		for _, f := range fs {
+			content, err := os.ReadFile(f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			b := minigit.NewBlob([]byte(content), temprepo)
+			// gitのblobを上書きする
+			if err := b.Store(); err != nil {
+				t.Fatal(err)
+			}
+			n := b.Name()
+			h := hex.EncodeToString(n[:])
+			runGit(t, []string{"cat-file", "-p", h})
+		}
+	})
+
 }
 
 // gitを実行して空白などを除去した上で出力を文字列として返す.
