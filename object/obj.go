@@ -17,13 +17,20 @@ type Object struct {
 	data []byte
 }
 
+// Objectの名前.
+type Name [sha1.Size]byte
+
+func (n Name) String() string {
+	return hex.EncodeToString(n[:])
+}
+
 // dataを保持する Object を作成する.
 func NewObject(data []byte) Object {
 	return Object{data}
 }
 
 // オブジェクトの名前. dataの内容に対して一意であると期待できる.
-func (o Object) Name() [sha1.Size]byte {
+func (o Object) Name() Name {
 	return sha1.Sum(o.data)
 }
 
@@ -45,9 +52,9 @@ func (o Object) Store(root string) error {
 }
 
 // rootに保存された名前 name を持つオブジェクトを読み出す.
-func ReadObject(root string, name [sha1.Size]byte) (*Object, error) {
-	h := name[:]
-	p := path.Join(root, ".git", "objects", hex.EncodeToString(h[:1]), hex.EncodeToString(h[1:]))
+func ReadObject(root string, name Name) (*Object, error) {
+	h := name.String()
+	p := path.Join(root, ".git", "objects", (h[:2]), (h[2:]))
 
 	// オブジェクトの取得
 	f, err := os.ReadFile(p)
@@ -64,8 +71,7 @@ func ReadObject(root string, name [sha1.Size]byte) (*Object, error) {
 		return nil, err
 	}
 	o := NewObject(data)
-	n := o.Name()
-	if hex.EncodeToString(n[:]) != hex.EncodeToString(h){
+	if o.Name().String() != name.String() {
 		return nil, errors.New("fatal: the name of object is invalid")
 	}
 	return &o, nil
@@ -73,7 +79,7 @@ func ReadObject(root string, name [sha1.Size]byte) (*Object, error) {
 
 func (r Object) compress() []byte {
 	var buf bytes.Buffer
-	w, err := zlib.NewWriterLevel(&buf, 1)
+	w, err := zlib.NewWriterLevel(&buf, 1)  // gitに揃える
 	if err != nil {
 		// 指定するレベルがまずいときにだけエラーになる。テストで担保するのでpanicで良い。
 		panic(err)

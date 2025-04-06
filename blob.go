@@ -2,7 +2,6 @@ package minigit
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"errors"
 	"fmt"
 	"strconv"
@@ -27,7 +26,7 @@ func NewBlob(content []byte) *blob {
 }
 
 // rootに永続化されている name オブジェクトを読み込む.
-func ReadBlob(root string, name [sha1.Size]byte) (*blob, error) {
+func ReadBlob(root string, name object.Name) (*blob, error) {
 	r, err := object.ReadObject(root, name)
 	if err != nil {
 		return nil, err
