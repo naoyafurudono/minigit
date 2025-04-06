@@ -12,6 +12,7 @@ import (
 
 	"github.com/naoyafurudono/minigit"
 	"github.com/samber/lo"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBlob(t *testing.T) {
@@ -64,26 +65,34 @@ func TestBlob(t *testing.T) {
 		}
 	})
 
-	t.Run("Store", func(t *testing.T) {
+	t.Run("Store - Read", func(t *testing.T) {
 		for _, f := range fs {
 			content, err := os.ReadFile(f)
 			if err != nil {
 				t.Fatal(err)
 			}
 			b := minigit.NewBlob([]byte(content), temprepo)
-			// gitのblobを上書きする
 			if err := b.Store(); err != nil {
 				t.Fatal(err)
 			}
 			n := b.Name()
 			h := hex.EncodeToString(n[:])
+	
+			// gitがobjectファイルを正しく読めることを検証
 			res := runGit(t, []string{"cat-file", "-p", h})
 			if res != string(content) {
 				t.Fatalf("expected %s, but got %s", string(content), res)
 			}
+
+			a, err := minigit.ReadBlob(temprepo, h)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, b.Name(), a.Name(), "Name()")
+			assert.Equal(t, b.Data(), a.Data(), "Data()")
 		}
 	})
-
 }
 
 // gitを実行して空白などを除去した上で出力を文字列として返す.

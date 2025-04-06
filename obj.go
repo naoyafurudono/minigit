@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha1"
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
+	"strconv"
 )
 
 type Object interface {
@@ -29,6 +33,39 @@ var _ Object = &blob{}
 
 func NewBlob(content []byte, root string) *blob {
 	return &blob{content: content, root: root}
+}
+
+func ReadBlob(root string, name string) (*blob, error) {
+	data, err := ReadObject(root, name)
+	if err != nil {
+		return nil, err
+	}
+	content, err := parse(data)
+	return NewBlob(content, root), nil
+}
+
+func parse(data []byte) ([]byte, error) {
+	bs := bytes.Split(data, []byte{0})
+	if len(bs) != 2 {
+		return nil, fmt.Errorf("null char must be 1, %#v", data)
+	}
+	header := bytes.Split(bs[0], []byte{' '})
+	content := bs[1]
+	if len(header) != 2 {
+		return nil, errors.New("header must be 2 fieleds")
+	}
+	if string(header[0]) != "blob" {
+		return nil, errors.New("blob only supported")
+	}
+	size, err := strconv.Atoi(string(header[1]))
+	if err != nil {
+		return nil, fmt.Errorf("header `%s` must contain the content length: %w", string(bs[0]), err)
+	}
+
+	if len(content) != size {
+		return nil, fmt.Errorf("invalid length, header: %d, content: %s", size, string(content))
+	}
+	return content, nil
 }
 
 func (b *blob) Name() [sha1.Size]byte {
@@ -65,4 +102,26 @@ func (b *blob) Store() error {
 		return fmt.Errorf("write: %w", err)
 	}
 	return nil
+}
+
+func ReadObject(root string, name string) ([]byte, error) {
+	// オブジェクトの特定
+	h, err := hex.DecodeString(name)
+	if err != nil {
+		return nil, err
+	}
+	p := path.Join(root, ".git", "objects", hex.EncodeToString(h[:1]), hex.EncodeToString(h[1:]))
+
+	// オブジェクトの取得
+	f, err := os.ReadFile(p)
+	if err != nil {
+		return nil, err
+	}
+	r, err := zlib.NewReader(bytes.NewReader(f))
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	data, err := io.ReadAll(r)
+	return data, err
 }
