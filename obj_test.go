@@ -75,27 +75,30 @@ func TestBlob(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			
+			// Store
 			b := minigit.NewBlob([]byte(content))
 			r := minigit.ToObject(b)
-
 			if err := r.Store(temprepo); err != nil {
 				t.Fatal(err)
 			}
-			n := r.Name()
-			h := hex.EncodeToString(n[:])
 
 			// gitがobjectファイルを正しく読めることを検証
+			n := r.Name()
+			h := hex.EncodeToString(n[:])
 			res := runGit(t, []string{"cat-file", "-p", h})
 			if res != string(content) {
 				t.Fatalf("expected %s, but got %s", string(content), res)
 			}
 
+			// Read
 			a, err := minigit.ReadBlob(temprepo, n)
 			if err != nil {
 				t.Fatal(err)
 			}
+			
+			// 結果が正しいことを検証
 			ra := minigit.ToObject(a)
-
 			assert.Equal(t, r.Name(), ra.Name(), "Name()")
 			assert.Equal(t, b.Encode(), a.Encode(), "Data()")
 		}
