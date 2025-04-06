@@ -34,7 +34,6 @@ func TestBlob(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	runGit(t, []string{"init"})
 	entries, err := os.ReadDir(temprepo)
 	if err != nil {
 		t.Fatal(err)
@@ -45,6 +44,8 @@ func TestBlob(t *testing.T) {
 		}
 		return path.Join(temprepo, e.Name()), true
 	})
+	
+	runGit(t, []string{"init"})
 
 	t.Run("Name", func(t *testing.T) {
 		for _, f := range fs {
@@ -57,7 +58,10 @@ func TestBlob(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			n := minigit.NewBlob([]byte(content), temprepo).Name()
+			b := minigit.NewBlob([]byte(content), temprepo)
+			r := minigit.ToObject(b)
+			n := r.Name()
+
 			h := hex.EncodeToString(n[:])
 			if hash != h {
 				t.Fatalf("expected %s, but got %s", hash, h)
@@ -72,12 +76,14 @@ func TestBlob(t *testing.T) {
 				t.Fatal(err)
 			}
 			b := minigit.NewBlob([]byte(content), temprepo)
-			if err := b.Store(); err != nil {
+			r := minigit.ToObject(b)
+
+			if err := r.Store(temprepo); err != nil {
 				t.Fatal(err)
 			}
-			n := b.Name()
+			n := r.Name()
 			h := hex.EncodeToString(n[:])
-	
+
 			// gitがobjectファイルを正しく読めることを検証
 			res := runGit(t, []string{"cat-file", "-p", h})
 			if res != string(content) {
@@ -88,9 +94,10 @@ func TestBlob(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			ra := minigit.ToObject(a)
 
-			assert.Equal(t, b.Name(), a.Name(), "Name()")
-			assert.Equal(t, b.Data(), a.Data(), "Data()")
+			assert.Equal(t, r.Name(), ra.Name(), "Name()")
+			assert.Equal(t, b.Encode(), a.Encode(), "Data()")
 		}
 	})
 }

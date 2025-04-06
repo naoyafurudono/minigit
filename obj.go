@@ -10,101 +10,42 @@ import (
 	"io"
 	"os"
 	"path"
-	"strconv"
 )
 
-type Object interface {
-	// objectの名前を取得する
-	Name() [sha1.Size]byte
-	// objectのデータを取得する
-	Data() []byte
-	// zlibで圧縮したデータを取得する
-	Compress() []byte
-	// しかるべき形で永続化する
-	Store() error
+// gitのオブジェクトストレージへの読み書きを提供する.
+type Object struct {
+	data []byte
 }
 
-type blob struct {
-	content []byte
-	root    string
+// dataを保持する Object を作成する.
+func NewObject(data []byte) Object {
+	return Object{data}
 }
 
-var _ Object = &blob{}
-
-func NewBlob(content []byte, root string) *blob {
-	return &blob{content: content, root: root}
+// オブジェクトの名前. dataの内容に対して一意であると期待できる.
+func (o Object) Name() [sha1.Size]byte {
+	return sha1.Sum(o.data)
 }
 
-func ReadBlob(root string, name string) (*blob, error) {
-	data, err := ReadObject(root, name)
-	if err != nil {
-		return nil, err
-	}
-	content, err := parse(data)
-	return NewBlob(content, root), nil
-}
+// オブジェクトのデータ.
+func (o Object) Data() []byte { return o.data }
 
-func parse(data []byte) ([]byte, error) {
-	bs := bytes.Split(data, []byte{0})
-	if len(bs) != 2 {
-		return nil, fmt.Errorf("null char must be 1, %#v", data)
-	}
-	header := bytes.Split(bs[0], []byte{' '})
-	content := bs[1]
-	if len(header) != 2 {
-		return nil, errors.New("header must be 2 fieleds")
-	}
-	if string(header[0]) != "blob" {
-		return nil, errors.New("blob only supported")
-	}
-	size, err := strconv.Atoi(string(header[1]))
-	if err != nil {
-		return nil, fmt.Errorf("header `%s` must contain the content length: %w", string(bs[0]), err)
-	}
-
-	if len(content) != size {
-		return nil, fmt.Errorf("invalid length, header: %d, content: %s", size, string(content))
-	}
-	return content, nil
-}
-
-func (b *blob) Name() [sha1.Size]byte {
-	return sha1.Sum(b.Data())
-}
-
-func (b *blob) Data() []byte {
-	// "blob <length of content>\0<content>"をASCIIエンコードしたバイト列がblobの表現
-	l := len(b.content)
-	header := append([]byte(fmt.Sprintf("blob %d", l)), []byte{0}...)
-	return append(header, b.content...)
-}
-
-func (b *blob) Compress() []byte {
-	var r bytes.Buffer
-	w, err := zlib.NewWriterLevel(&r, 1)
-	if err != nil {
-		// 指定するレベルがまずいときにだけエラーになる。テストで担保するのでpanicで良い。
-		panic(err)
-	}
-	w.Write(b.Data())
-	w.Close()
-	return r.Bytes()
-}
-
-func (b *blob) Store() error {
-	n := b.Name()
-	d := path.Join(b.root, ".git", "objects", fmt.Sprintf("%x", n[:1]))
+// Object o を root に保存する.
+func (o Object) Store(root string) error {
+	n := o.Name()
+	d := path.Join(root, ".git", "objects", fmt.Sprintf("%x", n[:1]))
 	if err := os.MkdirAll(d, 0755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 	p := path.Join(d, fmt.Sprintf("%x", n[1:]))
-	if err := os.WriteFile(p, b.Compress(), 0644); err != nil {
+	if err := os.WriteFile(p, o.compress(), 0644); err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
 	return nil
 }
 
-func ReadObject(root string, name string) ([]byte, error) {
+// rootに保存された名前 name を持つオブジェクトを読み出す.
+func ReadObject(root string, name string) (*Object, error) {
 	// オブジェクトの特定
 	h, err := hex.DecodeString(name)
 	if err != nil {
@@ -123,5 +64,36 @@ func ReadObject(root string, name string) ([]byte, error) {
 	}
 	defer r.Close()
 	data, err := io.ReadAll(r)
-	return data, err
+	if err != nil {
+		return nil, err
+	}
+	o := NewObject(data)
+	n := o.Name()
+	if hex.EncodeToString(n[:]) != name {
+		return nil, errors.New("fatal: the name of object is invalid")
+	}
+	return &o, nil
+}
+
+func (r Object) compress() []byte {
+	var buf bytes.Buffer
+	w, err := zlib.NewWriterLevel(&buf, 1)
+	if err != nil {
+		// 指定するレベルがまずいときにだけエラーになる。テストで担保するのでpanicで良い。
+		panic(err)
+	}
+	w.Write(r.data)
+	w.Close()
+	return buf.Bytes()
+}
+
+// 保存対象のデータを Object に変換する.
+// enc.Encode() から生成される []byte を保存する Object を生成する.
+// Object.Data() から取得できる.
+func ToObject(enc Encoder) Object {
+	return NewObject(enc.Encode())
+}
+
+type Encoder interface {
+	Encode() []byte
 }
