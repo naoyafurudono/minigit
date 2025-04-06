@@ -34,8 +34,6 @@ func TestBlob(t *testing.T) {
 	}
 
 	runGit(t, []string{"init"})
-	runGit(t, []string{"add", "-A"})
-	runGit(t, []string{"commit", "-m", "initial commit"})
 	entries, err := os.ReadDir(temprepo)
 	if err != nil {
 		t.Fatal(err)
@@ -49,7 +47,9 @@ func TestBlob(t *testing.T) {
 
 	t.Run("Name", func(t *testing.T) {
 		for _, f := range fs {
-			hash := runGit(t, []string{"hash-object", f})
+			hash := strings.Trim(
+				runGit(t, []string{"hash-object", f}),
+				"\n")
 			t.Log(f, hash)
 			content, err := os.ReadFile(f)
 			if err != nil {
@@ -77,7 +77,10 @@ func TestBlob(t *testing.T) {
 			}
 			n := b.Name()
 			h := hex.EncodeToString(n[:])
-			runGit(t, []string{"cat-file", "-p", h})
+			res := runGit(t, []string{"cat-file", "-p", h})
+			if res != string(content) {
+				t.Fatalf("expected %s, but got %s", string(content), res)
+			}
 		}
 	})
 
@@ -91,8 +94,8 @@ func runGit(t *testing.T, args []string) string {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Fatal(err)
 	} else {
-		r := string(out)
-		return strings.Trim(r, "\n \t")
+		return string(out)
+
 	}
 	return ""
 }

@@ -61,7 +61,7 @@ func (b *blob) Store() error {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 	p := path.Join(d, fmt.Sprintf("%x", n[1:]))
-	if err := os.WriteFile(p, b.Compress(), 0660); err != nil {
+	if err := os.WriteFile(p, b.Compress(), 0644); err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
 	return nil
