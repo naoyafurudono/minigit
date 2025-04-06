@@ -1,4 +1,4 @@
-package minigit
+package object
 
 import (
 	"bytes"
@@ -81,15 +81,4 @@ func (r Object) compress() []byte {
 	w.Write(r.data)
 	w.Close()
 	return buf.Bytes()
-}
-
-// 保存対象のデータを Object に変換する.
-// enc.Encode() から生成される []byte を保存する Object を生成する.
-// Object.Data() から取得できる.
-func ToObject(enc Encoder) Object {
-	return NewObject(enc.Encode())
-}
-
-type Encoder interface {
-	Encode() []byte
 }

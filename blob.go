@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-)
 
-var _ Encoder = &blob{}
+	"github.com/naoyafurudono/minigit/object"
+)
 
 type blob struct {
 	content []byte
@@ -28,7 +28,7 @@ func NewBlob(content []byte) *blob {
 
 // rootに永続化されている name オブジェクトを読み込む.
 func ReadBlob(root string, name [sha1.Size]byte) (*blob, error) {
-	r, err := ReadObject(root, name)
+	r, err := object.ReadObject(root, name)
 	if err != nil {
 		return nil, err
 	}

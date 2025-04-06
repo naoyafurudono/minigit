@@ -1,4 +1,4 @@
-package minigit_test
+package object_test
 
 import (
 	"encoding/hex"
@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/naoyafurudono/minigit"
+	"github.com/naoyafurudono/minigit/object"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ func TestBlob(t *testing.T) {
 	t.Cleanup(func() {
 		os.Chdir(orig)
 	})
-	datarepo := path.Join(orig, "testdata", "repo")
+	datarepo := path.Join(orig, "..", "testdata", "repo")
 
 	temprepo := t.TempDir()
 	if err := os.CopyFS(temprepo, os.DirFS(datarepo)); err != nil {
@@ -59,7 +60,7 @@ func TestBlob(t *testing.T) {
 			}
 
 			b := minigit.NewBlob([]byte(content))
-			r := minigit.ToObject(b)
+			r := object.NewObject(b.Encode())
 			n := r.Name()
 
 			h := hex.EncodeToString(n[:])
@@ -75,10 +76,10 @@ func TestBlob(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			
+
 			// Store
 			b := minigit.NewBlob([]byte(content))
-			r := minigit.ToObject(b)
+			r := object.NewObject(b.Encode())
 			if err := r.Store(temprepo); err != nil {
 				t.Fatal(err)
 			}
@@ -96,9 +97,9 @@ func TestBlob(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			
+
 			// 結果が正しいことを検証
-			ra := minigit.ToObject(a)
+			ra := object.NewObject(a.Encode())
 			assert.Equal(t, r.Name(), ra.Name(), "Name()")
 			assert.Equal(t, b.Encode(), a.Encode(), "Data()")
 		}
