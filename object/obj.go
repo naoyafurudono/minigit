@@ -79,7 +79,7 @@ func ReadObject(root string, name Name) (*Object, error) {
 
 func (r Object) compress() []byte {
 	var buf bytes.Buffer
-	w, err := zlib.NewWriterLevel(&buf, 1)  // gitに揃える
+	w, err := zlib.NewWriterLevel(&buf, 1) // gitに揃える
 	if err != nil {
 		// 指定するレベルがまずいときにだけエラーになる。テストで担保するのでpanicで良い。
 		panic(err)
