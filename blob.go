@@ -2,6 +2,7 @@ package minigit
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"strconv"
@@ -25,7 +26,7 @@ func NewBlob(content []byte, root string) *blob {
 	return &blob{content: content, root: root}
 }
 
-func ReadBlob(root string, name string) (*blob, error) {
+func ReadBlob(root string, name [sha1.Size]byte) (*blob, error) {
 	r, err := ReadObject(root, name)
 	if err != nil {
 		return nil, err

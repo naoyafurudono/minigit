@@ -45,12 +45,8 @@ func (o Object) Store(root string) error {
 }
 
 // rootに保存された名前 name を持つオブジェクトを読み出す.
-func ReadObject(root string, name string) (*Object, error) {
-	// オブジェクトの特定
-	h, err := hex.DecodeString(name)
-	if err != nil {
-		return nil, err
-	}
+func ReadObject(root string, name [sha1.Size]byte) (*Object, error) {
+	h := name[:]
 	p := path.Join(root, ".git", "objects", hex.EncodeToString(h[:1]), hex.EncodeToString(h[1:]))
 
 	// オブジェクトの取得
@@ -69,7 +65,7 @@ func ReadObject(root string, name string) (*Object, error) {
 	}
 	o := NewObject(data)
 	n := o.Name()
-	if hex.EncodeToString(n[:]) != name {
+	if hex.EncodeToString(n[:]) != hex.EncodeToString(h){
 		return nil, errors.New("fatal: the name of object is invalid")
 	}
 	return &o, nil

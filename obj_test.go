@@ -90,7 +90,7 @@ func TestBlob(t *testing.T) {
 				t.Fatalf("expected %s, but got %s", string(content), res)
 			}
 
-			a, err := minigit.ReadBlob(temprepo, h)
+			a, err := minigit.ReadBlob(temprepo, n)
 			if err != nil {
 				t.Fatal(err)
 			}
