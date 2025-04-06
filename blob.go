@@ -22,19 +22,21 @@ func (b *blob) Encode() []byte {
 	return append(header, b.content...)
 }
 
-func NewBlob(content []byte, root string) *blob {
-	return &blob{content: content, root: root}
+func NewBlob(content []byte) *blob {
+	return &blob{content: content}
 }
 
+// rootに永続化されている name オブジェクトを読み込む.
 func ReadBlob(root string, name [sha1.Size]byte) (*blob, error) {
 	r, err := ReadObject(root, name)
 	if err != nil {
 		return nil, err
 	}
 	content, err := parseBlob(r.Data())
-	return NewBlob(content, root), nil
+	return NewBlob(content), nil
 }
 
+// data をパースしてそのコンテンツを返す.
 func parseBlob(data []byte) ([]byte, error) {
 	bs := bytes.Split(data, []byte{0})
 	if len(bs) != 2 {

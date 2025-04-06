@@ -44,7 +44,7 @@ func TestBlob(t *testing.T) {
 		}
 		return path.Join(temprepo, e.Name()), true
 	})
-	
+
 	runGit(t, []string{"init"})
 
 	t.Run("Name", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestBlob(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			b := minigit.NewBlob([]byte(content), temprepo)
+			b := minigit.NewBlob([]byte(content))
 			r := minigit.ToObject(b)
 			n := r.Name()
 
@@ -75,7 +75,7 @@ func TestBlob(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			b := minigit.NewBlob([]byte(content), temprepo)
+			b := minigit.NewBlob([]byte(content))
 			r := minigit.ToObject(b)
 
 			if err := r.Store(temprepo); err != nil {
