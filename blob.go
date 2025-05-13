@@ -17,7 +17,7 @@ type blob struct {
 func (b *blob) Encode() []byte {
 	// "blob <length of content>\0<content>"をASCIIエンコードしたバイト列がblobの表現
 	l := len(b.content)
-	header := append([]byte(fmt.Sprintf("blob %d", l)), []byte{0}...)
+	header := append(fmt.Appendf(nil, "blob %d", l), []byte{0}...)
 	return append(header, b.content...)
 }
 
